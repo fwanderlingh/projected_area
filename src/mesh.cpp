@@ -76,7 +76,7 @@ void Mesh::render(Shader* shader_program) {
 
 void Mesh::init_mesh(const aiScene* scene, const aiMesh* mesh, size_t index) {
 
-  std::cout << "Loading mesh named '" << mesh->mName.C_Str() << "'" << std::endl;
+  std::cerr << "Loading mesh named '" << mesh->mName.C_Str() << "'" << std::endl;
 
   if (!mesh->HasNormals()) {
     std::cerr << "Mesh has no normals!" << std::endl;
@@ -107,11 +107,11 @@ void Mesh::init_mesh(const aiScene* scene, const aiMesh* mesh, size_t index) {
       const aiBone* bone = mesh->mBones[i];
       bone_matrices[i] = bone->mOffsetMatrix;
 
-      std::cout << "Bone '" << bone->mName.C_Str() << "' includes " << bone->mNumWeights << " vertices:" << std::endl;
+      std::cerr << "Bone '" << bone->mName.C_Str() << "' includes " << bone->mNumWeights << " vertices:" << std::endl;
       for (size_t j = 0; j < bone->mNumWeights; ++j) {
-        std::cout << ' ' << bone->mWeights[j].mVertexId;
+        std::cerr << ' ' << bone->mWeights[j].mVertexId;
       }
-      std::cout << std::endl;
+      std::cerr << std::endl;
 
       const aiNode* node = scene->mRootNode->FindNode(bone->mName.C_Str());
       const aiNode* temp_node = node;
@@ -138,11 +138,11 @@ void Mesh::init_mesh(const aiScene* scene, const aiMesh* mesh, size_t index) {
         //final_normal[v] += w * (normal_matrix * (*src_normal));
       }
 
-      std::cout << "bone " << i << ":" << std::endl;
-      std::cout << bone_matrices[i].a1 << ' ' << bone_matrices[i].a2 << ' ' << bone_matrices[i].a3 << ' ' << bone_matrices[i].a4 << std::endl;
-      std::cout << bone_matrices[i].b1 << ' ' << bone_matrices[i].b2 << ' ' << bone_matrices[i].b3 << ' ' << bone_matrices[i].b4 << std::endl;
-      std::cout << bone_matrices[i].c1 << ' ' << bone_matrices[i].c2 << ' ' << bone_matrices[i].c3 << ' ' << bone_matrices[i].c4 << std::endl;
-      std::cout << bone_matrices[i].d1 << ' ' << bone_matrices[i].d2 << ' ' << bone_matrices[i].d3 << ' ' << bone_matrices[i].d4 << std::endl;
+      std::cerr << "bone " << i << ":" << std::endl;
+      std::cerr << bone_matrices[i].a1 << ' ' << bone_matrices[i].a2 << ' ' << bone_matrices[i].a3 << ' ' << bone_matrices[i].a4 << std::endl;
+      std::cerr << bone_matrices[i].b1 << ' ' << bone_matrices[i].b2 << ' ' << bone_matrices[i].b3 << ' ' << bone_matrices[i].b4 << std::endl;
+      std::cerr << bone_matrices[i].c1 << ' ' << bone_matrices[i].c2 << ' ' << bone_matrices[i].c3 << ' ' << bone_matrices[i].c4 << std::endl;
+      std::cerr << bone_matrices[i].d1 << ' ' << bone_matrices[i].d2 << ' ' << bone_matrices[i].d3 << ' ' << bone_matrices[i].d4 << std::endl;
     }
 
     // initialize our dimension trackers.
@@ -169,10 +169,10 @@ void Mesh::init_mesh(const aiScene* scene, const aiMesh* mesh, size_t index) {
       Vertex vertex(glm::vec3(final_pos[i].x, final_pos[i].y, final_pos[i].z));
       //         glm::vec3(final_normal[i].x, final_normal[i].y, final_normal[i].z));
 
-      std::cout << "Adding vertex " << i << ": " << final_pos[i].x << "," << final_pos[i].y << "," << final_pos[i].z;
-//      std::cout << "\t" << final_normal[i].x << "," << final_normal[i].y << "," << final_normal[i].z << std::endl;
-      std::cout << "  was: " << mesh->mVertices[i].x << "," << mesh->mVertices[i].y << "," << mesh->mVertices[i].z << std::endl;
-//      std::cout << mesh->mNormals[i].x << "," << mesh->mNormals[i].y << "," << mesh->mNormals[i].z << std::endl;
+      std::cerr << "Adding vertex " << i << ": " << final_pos[i].x << "," << final_pos[i].y << "," << final_pos[i].z;
+//      std::cerr << "\t" << final_normal[i].x << "," << final_normal[i].y << "," << final_normal[i].z << std::endl;
+      std::cerr << "  was: " << mesh->mVertices[i].x << "," << mesh->mVertices[i].y << "," << mesh->mVertices[i].z << std::endl;
+//      std::cerr << mesh->mNormals[i].x << "," << mesh->mNormals[i].y << "," << mesh->mNormals[i].z << std::endl;
 
       // Accumulate the centroid_ of the object.
       centroid_ += vertex.pos;
@@ -312,7 +312,7 @@ float Mesh::far_plane_bound(const glm::mat4& model_to_object_coords, const glm::
 bool Mesh::init_from_scene(const aiScene* scene, const std::string& filename) {
   entries.resize(scene->mNumMeshes);
 
-  std::cout << "Reading " << entries.size() << " meshes" << std::endl;
+  std::cerr << "Reading " << entries.size() << " meshes" << std::endl;
 
   // Initialize the meshes in the scene one by one
   for (size_t i = 0; i < entries.size(); ++i) {

@@ -148,16 +148,14 @@ int main(int argc, char** argv) {
    * Main event loop
    */
   do {
-    scene.render(&shader_program, object, translation, sensor);    
+    scene.render(&shader_program, object, translation, sensor);
     
-    if (s_interrupted && glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS || glfwWindowShouldClose(window))  {
-      std::cerr << "Exiting." << std::endl;
-
-      double pixels = scene.projected_area(width, height);
-      double projected_area = pixels * box_width * box_width / (double)(width * height);
-      std::cout << std::setprecision(17) << projected_area << std::endl;
-      s_interrupted = true;
-    }
+    double pixels = scene.projected_area(width, height);
+    double projected_area = pixels * box_width * box_width / (double)(width * height);
+    std::cout << std::setprecision(17) << projected_area << std::endl;
+    s_interrupted = true;
+    
+    
     glfwSwapBuffers(window);
     glfwPollEvents();
   } while (!s_interrupted);

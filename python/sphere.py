@@ -29,55 +29,54 @@
 #
 
 #
-# Simple script demonstrating the computation of projected area on a
-# fully convex, hollow, simple 3D object. See README.md for a partial
-# description of why this isn't particularly useful for most use-cases.
+# Call projected_area on all the points on a sphere to generate a
+# surface area contour map.
 #
 
-from pyassimp import *
 import numpy as np
 import matplotlib.pyplot as plt
+import pyquat
+from pyquat import *
+from mpl_toolkits.mplot3d import Axes3D
+import matplotlib.colors as colors
+import matplotlib.cm as cm
+import subprocess
+import cPickle as pickle
 
-def shoelace_area(vertices):
-    pos = 0.0
-    neg = 0.0
-    for ii in range(0,vertices.shape[1]-1):
-        pos += vertices[ii,0] * vertices[ii+1,1]
-        neg += vertices[ii,1] * vertices[ii+1,0]
-    return abs(pos - neg)
+args = ["build/projected_area", "AXHM_V2.obj", "10"]
 
-def projected_area_estimate(faces, T):
+u, v = np.mgrid[0:2*np.pi:40j, 0:np.pi:20j]
+x = np.cos(u) * np.sin(v)
+y = np.sin(u) * np.sin(v)
+z = np.cos(v)
 
-    vertices = np.dot(scene.meshes[0].vertices, np.transpose(T))
-    normals  = np.dot(scene.meshes[0].normals,  np.transpose(T))
+q0 = pyquat.identity()
 
-    area = 0.0
+output = np.zeros_like(x)
 
-    fig = plt.figure(1)
-    
-    for ff in range(0,faces.shape[0]):
-        vertex_ids    = faces[ff]
+for ii in range(0, x.shape[0]):
+    for jj in range(0, x.shape[1]):
+        vz = np.transpose(-np.array([x[ii,jj], y[ii,jj], z[ii,jj]]))
+        q = Quat(0.0, *vz)
+        this_args = args[:] + ["0.0", str(vz[0]), str(vz[1]), str(vz[2])]
+        this_args
+        print "This_args =", this_args
+        popen = subprocess.Popen(this_args, stdout=subprocess.PIPE)
+        popen.wait()
+        output[ii,jj] = float(popen.stdout.readline().rstrip())
+        x[ii,jj] *= output[ii,jj]
+        y[ii,jj] *= output[ii,jj]
+        z[ii,jj] *= output[ii,jj]
 
-        face_vertices = vertices[vertex_ids,0:2] # put in 2D
-        face_normals  = normals[vertex_ids]
-    
-        face_normal   = face_normals.mean(0)
 
-        if face_normal[2] > 0.0:
-            area += shoelace_area(face_vertices)
+pickle.dump( {"x": x, "y": y, "z": z, "area": output}, open("area.p", "wb"))
+fig = plt.figure()
+axis = fig.add_subplot(111, projection = '3d')
+axis.set_title("Cross-sectional area according to velocity vector")
+axis.set_xlabel("x")
+axis.set_ylabel("y")
+axis.set_zlabel("z")
 
-        print "Plotting face", ff
-        plt.plot(face_vertices[:,0], face_vertices[:,1], lw=0.5)
-
-    plt.show()
-    return area
-
-scene = load('AXHM_V2.obj')
-
-if len(scene.meshes) != 1:
-    print "Error: This program only works for a single mesh."
-    exit
-
-faces = scene.meshes[0].faces
-
-print "Area =", projected_area_estimate(faces, np.identity(3))
+color_map = cm.jet((output - output.min()) / (output.max() - output.min()))
+surface = axis.plot_surface(x, y, z, facecolors=color_map, rstride=1, cstride=1)
+plt.show()
