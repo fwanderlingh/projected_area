@@ -40,6 +40,8 @@
 #include <iostream>
 #include <sstream>
 #include <csignal>
+#include <cstdio>
+#include <list>
 
 #include "../include/gl_error.hpp"
 #include "../include/scene.hpp"
@@ -63,46 +65,133 @@ static void s_catch_signals(void) {
 
 
 
+/** @brief Read quaternions from some input stream
+ *
+ * @param[in,out]  in  input stream to read from
+ * @param[out]     q   quaternion where result is stored, normalized
+ *
+ * @returns true if read was successful; false if EOF was encountered at first read.
+ */
+bool read_quaternion(std::istream& in, glm::dquat& q) 
+{
+  double w, x, y, z;
+
+  if (in.peek() == 'x' || in.fail()) return false;
+  
+  in >> w;  
+  in >> x;
+  in >> y;
+  in >> z;
+
+  if (in.fail()) return false;
+  
+  
+  q = glm::normalize(glm::dquat(w, x, y, z));
+  return true;
+}
+
+
+/** @brief Read a list of quaternions from some input stream (until EOF)
+ *
+ * @param[in,out]  in   input stream to read from
+ *
+ * @returns a linked list of quaternions
+ */
+std::list<glm::dquat> read_quaternions(std::istream& in) 
+{
+  std::list<glm::dquat> l;
+  glm::dquat q;
+  bool succ = read_quaternion(in, q);
+
+  while (succ) {
+    l.push_back(q);
+    succ = read_quaternion(in, q);
+  }
+
+  return l;  
+}
+
+
+/** @brief Read a list of quaternions from a file
+ *
+ * @param[in]  filename   input filename
+ *
+ * @returns a linked list of quaternions
+ */
+std::list<glm::dquat> read_quaternions(const std::string& filename) 
+{
+  std::ifstream f(filename.c_str());
+  return read_quaternions(f);
+}
+
+
+/** @brief Write a list of doubles to an output stream
+ *
+ * @param[in,out] out     output stream
+ * @param[in]     areas   list of doubles to write
+ */
+void write_projected_areas(std::ostream& out, const std::list<double>& areas)
+{
+  for (std::list<double>::const_iterator it = areas.begin(); it != areas.end(); ++it) {
+    out << *it << std::endl;
+  }
+}
+
+
+/** @brief Write a list of doubles to a file
+ *
+ * @param[in]  filename  where to write
+ * @param[in]  areas     list of doubles to write
+ */
+void write_projected_areas(const std::string& filename, const std::list<double>& areas) 
+{
+  std::ofstream f(filename.c_str());
+  write_projected_areas(f, areas);
+}
+
+
+
+
+
+
 /** @brief Main function
  **
  * @detail Sets everything up and then loops --- pretty standard OpenGL --- to
  *         intercept keypresses, mouseclicks, to modify the scene, and to redraw.
  *
- * @param[in] Number of arguments from the command line.
- * @param[in] Array of character pointers to the command line arguments.
+ * @param[in] argc  Number of arguments from the command line.
+ * @param[in] argv  Array of character pointers to the command line arguments.
  *
  * \returns An integer describing the exit status.
  */
 int main(int argc, char** argv) {
 
   std::string model_filename;
-  if (argc < 7) {
-    std::cerr << "Usage: projected_area filename maximum_dimension qw qx qy qz [window_size]" << std::endl;
-    exit(-1);
+  if (argc < 3) {
+    std::cerr << "Usage: projected_area filename maximum_dimension attitude_file [window_size]" << std::endl;
+    return -1;
   }
   float box_width = 10.0;
   unsigned int width = 1024, height = 1024;
   
   model_filename   = argv[1];
   box_width        = atof(argv[2]);
-  double qw, qx, qy, qz;
-  qw               = atof(argv[3]);
-  qx               = atof(argv[4]);
-  qy               = atof(argv[5]);
-  qz               = atof(argv[6]);
 
-  std::cerr << "Read quaternion: " << qw << ' ' << qx << ' ' << qy << ' ' << qz << std::endl;
+  std::list<glm::dquat> attitudes;
+
+  std::string attitudes_filename = argv[3];
   
-  if (argc > 7)
-    width = height = atoi(argv[7]);
-
+  attitudes = read_quaternions(attitudes_filename);
+  
+  if (argc > 4)
+    width = height = atoi(argv[4]);
+  
   float model_scale_factor = 1.0;
-  glm::dquat object = glm::dquat(qw, qx, qy, qz);
   glm::dquat sensor(1.0, 0.0, 0.0, 0.0);
   glm::dvec3 translation(0.0, 0.0, 100.0);
   
   /* This is where we start to catch signals. */
-  s_catch_signals ();
+  //s_catch_signals ();
 
   std::cerr << "Loading model "      << model_filename << std::endl;
   std::cerr << "Scaling model by "   << model_scale_factor << std::endl;
@@ -121,7 +210,7 @@ int main(int argc, char** argv) {
   /*
    * 4. Attempt to create a window that we can draw our LIDAR images in.
    */
-  GLFWwindow* window = glfwCreateWindow(width, height, "GLIDAR", NULL, NULL);
+  GLFWwindow* window = glfwCreateWindow(width, height, "Projected Area", NULL, NULL);
   if (!window) {
     std::cerr << "Failed to open GLFW window." << std::endl;
     glfwTerminate();
@@ -137,28 +226,38 @@ int main(int argc, char** argv) {
   }
 
   // Ensure we can capture keypresses.
-  glfwSetInputMode(window, GLFW_STICKY_KEYS, GL_TRUE);
+  //glfwSetInputMode(window, GLFW_STICKY_KEYS, GL_TRUE);
 
   Scene  scene(model_filename, model_scale_factor, -translation[2], box_width);
   Shader shader_program("shaders/vertex.glsl", "shaders/fragment.glsl");
-
-
-
+  
+  glfwSwapBuffers(window);
+  
+  
   /*
    * Main event loop
    */
-  do {
+  std::cerr << "There are " << attitudes.size() << " attitudes." << std::endl;
+  
+  for (std::list<glm::dquat>::const_iterator it = attitudes.begin(); it != attitudes.end(); ++it) {
+
+    glm::dquat object = *it;
+
     scene.render(&shader_program, object, translation, sensor);
+    glfwSwapBuffers(window);
     
     double pixels = scene.projected_area(width, height);
     double projected_area = pixels * box_width * box_width / (double)(width * height);
-    std::cout << std::setprecision(17) << projected_area << std::endl;
-    s_interrupted = true;
     
-    
-    glfwSwapBuffers(window);
-    glfwPollEvents();
-  } while (!s_interrupted);
+    std::cout << std::setprecision(17)
+              << object.w << ' '
+              << object.x << ' '
+              << object.y << ' '
+              << object.z << ' '
+              << projected_area << std::endl;
+  }
+  std::cerr << "Done!" << std::endl;
+  
 
   glfwTerminate();
   

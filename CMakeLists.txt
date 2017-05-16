@@ -6,6 +6,8 @@ cmake_minimum_required(VERSION 2.6 FATAL_ERROR)
 project(projected_area)
 set(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake/Modules/")
 
+#list(APPEND CMAKE_CXX_FLAGS "-pthread -std=c++11 ${CMAKE_CXX_FLAGS} -g -ftest-coverage -fprofile-arcs")
+
 if (APPLE)
   include (UseDebugSymbols)
 

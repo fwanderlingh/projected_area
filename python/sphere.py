@@ -42,8 +42,13 @@ import matplotlib.colors as colors
 import matplotlib.cm as cm
 import subprocess
 import cPickle as pickle
+import curses.ascii
 
-args = ["build/projected_area", "AXHM_V2.obj", "10"]
+
+def fstr(f):
+    return format(f, '1.17E')
+
+args = ["build/projected_area", "AXHM_V2.obj", "10.0", "input.txt"]
 
 u, v = np.mgrid[0:2*np.pi:40j, 0:np.pi:20j]
 x = np.cos(u) * np.sin(v)
@@ -54,20 +59,41 @@ q0 = pyquat.identity()
 
 output = np.zeros_like(x)
 
+f = open('input.txt', 'w')
+
 for ii in range(0, x.shape[0]):
     for jj in range(0, x.shape[1]):
+        
         vz = np.transpose(-np.array([x[ii,jj], y[ii,jj], z[ii,jj]]))
         q = Quat(0.0, *vz)
-        this_args = args[:] + ["0.0", str(vz[0]), str(vz[1]), str(vz[2])]
-        this_args
-        print "This_args =", this_args
-        popen = subprocess.Popen(this_args, stdout=subprocess.PIPE)
-        popen.wait()
-        output[ii,jj] = float(popen.stdout.readline().rstrip())
+
+        q_out = " ".join(["0.0", fstr(vz[0]), fstr(vz[1]), fstr(vz[2])]) + "\n"
+        f.write(q_out)
+
+f.write("x")
+f.close()
+
+popen = subprocess.Popen(args, stdout=subprocess.PIPE)
+popen.wait()
+
+f = open('output.txt', 'w')
+
+for ii in range(0, x.shape[0]):
+    for jj in range(0, x.shape[1]):
+
+        raw_line = popen.stdout.readline()
+        line = raw_line.rstrip().split(' ')
+        output[ii,jj] = float(line[-1])
+        print output[ii,jj]
+        f.write(raw_line)
+        #import pdb
+        #pdb.set_trace()
+        
         x[ii,jj] *= output[ii,jj]
         y[ii,jj] *= output[ii,jj]
         z[ii,jj] *= output[ii,jj]
 
+f.close()
 
 pickle.dump( {"x": x, "y": y, "z": z, "area": output}, open("area.p", "wb"))
 fig = plt.figure()
