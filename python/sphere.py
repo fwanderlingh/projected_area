@@ -43,12 +43,15 @@ import matplotlib.cm as cm
 import subprocess
 import cPickle as pickle
 import curses.ascii
+import sys
 
 
 def fstr(f):
     return format(f, '1.17E')
 
-args = ["build/projected_area", "AXHM_V2.obj", "10.0", "input.txt"]
+args = ["build/projected_area", # binary -- probably don't change
+        "AXHM_V2.obj",          # 3D object file
+        "10.0"]                 # how big to make the orthographic projection
 
 u, v = np.mgrid[0:2*np.pi:40j, 0:np.pi:20j]
 x = np.cos(u) * np.sin(v)
@@ -59,41 +62,33 @@ q0 = pyquat.identity()
 
 output = np.zeros_like(x)
 
-f = open('input.txt', 'w')
+popen = subprocess.Popen(args, stdout=subprocess.PIPE, stdin=subprocess.PIPE)
 
+count = 0
 for ii in range(0, x.shape[0]):
     for jj in range(0, x.shape[1]):
         
         vz = np.transpose(-np.array([x[ii,jj], y[ii,jj], z[ii,jj]]))
         q = Quat(0.0, *vz)
 
-        q_out = " ".join(["0.0", fstr(vz[0]), fstr(vz[1]), fstr(vz[2])]) + "\n"
-        f.write(q_out)
-
-f.write("x")
-f.close()
-
-popen = subprocess.Popen(args, stdout=subprocess.PIPE)
-popen.wait()
-
-f = open('output.txt', 'w')
-
-for ii in range(0, x.shape[0]):
-    for jj in range(0, x.shape[1]):
+        # This is not a valid unit quaternion, but it will be normalized to 
+        q_out = " ".join(["1.0", fstr(vz[0]), fstr(vz[1]), fstr(vz[2])]) + "\n"
+        popen.stdin.write(q_out)
 
         raw_line = popen.stdout.readline()
         line = raw_line.rstrip().split(' ')
         output[ii,jj] = float(line[-1])
-        print output[ii,jj]
-        f.write(raw_line)
-        #import pdb
-        #pdb.set_trace()
-        
+
         x[ii,jj] *= output[ii,jj]
         y[ii,jj] *= output[ii,jj]
         z[ii,jj] *= output[ii,jj]
+        
+        count += 1
 
-f.close()
+sys.stderr.write("There were " + str(count) + " attitudes")
+popen.stdin.write("x\n")
+sys.stderr.write("Done writing.\n")
+
 
 pickle.dump( {"x": x, "y": y, "z": z, "area": output}, open("area.p", "wb"))
 fig = plt.figure()

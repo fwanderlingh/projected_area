@@ -72,6 +72,8 @@ void Mesh::render(Shader* shader_program) {
   check_gl_error();
 
   shader_program->unbind();
+
+  glFlush(); // replaces glfwSwapBuffers()
 }
 
 void Mesh::init_mesh(const aiScene* scene, const aiMesh* mesh, size_t index) {

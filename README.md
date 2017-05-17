@@ -73,6 +73,8 @@ The Python code in that subdirectory needs:
 * numpy 1.10 or so
 * ASSIMP's Python API (see the ASSIMP repository for details)
 * matplotlib
+* cPickle (though you can comment this part out or have it use regular Pickle instead)
+* [pyquat](http://github.com/mohawkjohn/pyquat)
 
 ### Dependency Installation ###
 
@@ -112,8 +114,33 @@ but I haven't actually tested that.
 
 ### Example Usage: Linux/Unix ###
 
+Suppose you want to open <tt>myobject.obj</tt>, where the origin is
+more or less centered, and the largest dimension is under 10.0
+meters. Suppose you also want the window size to be 256 by 256 pixels.
 
-    build/projected_area myobject.obj
+    build/projected_area myobject.obj 10.0 256 -p
+
+You'll then want to enter the quaternion for the attitude you want to
+print, separated by spaces, and concluding with the enter key. It will
+render that attitude. You can do this over and over again. Type 'x'
+followed by ENTER when you're done.
+
+The <tt>-p</tt> flag tells the OpenGL display to persist even after
+all of the attitudes have been rendered. If you use this flag, exit
+using Ctrl+C.
+
+Note also that the program will normalize any quaternion you give it,
+which is handy if you don't feel like typing out all the digits of an
+irrational number. For example, you can just use <tt>1 0 1 0</tt>,
+which it interprets as a ratio.
+
+There is also a Python script which demonstrates the computation of as
+many projected areas as you'd like:
+
+    python python/sphere.py
+
+The parameters are stored in that script.
+
 
 ### Running on Mac OS X ###
 
@@ -121,11 +148,6 @@ Run it exactly the same way as in Linux, but instead of using
 `build/projected_area` as the binary, use
 `build/projected_area.app/Contents/MacOS/projected_area`. Having it packaged in this
 way helps the program to interact with Finder.
-
-### Command-Line Arguments ###
-
-The first argument, the model filename, is mandatory. Additional
-arguments are also accepted.
 
 ### Known Issues ###
 
@@ -140,9 +162,9 @@ If you find a bug, please file it in our [issues tracker](https://github.com/moh
   
 ## Contributing ##
 
-Contributions are appreciated. We prefer that you submit them as pull requests to 
-the [projected_area repository](https://github.com/mohawkjohn/projected_area). If you don't know how to use `git rebase`, please
-feel free to ask.
+Contributions are appreciated. We prefer that you submit them as pull
+requests to the [projected_area repository](https://github.com/mohawkjohn/projected_area). If
+you don't know how to use `git rebase`, please feel free to ask.
 
 ## License Note ##
 

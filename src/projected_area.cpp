@@ -151,6 +151,11 @@ void write_projected_areas(const std::string& filename, const std::list<double>&
 
 
 
+std::ostream& operator<<(std::ostream& out, const glm::dquat& q) 
+{
+  out << '[' << q.w << ' ' << q.x << ' ' << q.y << ' ' << q.z << ']' << std::flush;
+  return out;
+}
 
 
 
@@ -168,7 +173,7 @@ int main(int argc, char** argv) {
 
   std::string model_filename;
   if (argc < 3) {
-    std::cerr << "Usage: projected_area filename maximum_dimension attitude_file [window_size]" << std::endl;
+    std::cerr << "Usage: projected_area filename maximum_dimension [window_size [-p]]" << std::endl;
     return -1;
   }
   float box_width = 10.0;
@@ -176,22 +181,20 @@ int main(int argc, char** argv) {
   
   model_filename   = argv[1];
   box_width        = atof(argv[2]);
-
-  std::list<glm::dquat> attitudes;
-
-  std::string attitudes_filename = argv[3];
   
-  attitudes = read_quaternions(attitudes_filename);
+  if (argc > 3)
+    width = height = atoi(argv[3]);
   
+  bool persist = false;
   if (argc > 4)
-    width = height = atoi(argv[4]);
+    persist = (argv[4][1] == 'p');
   
   float model_scale_factor = 1.0;
   glm::dquat sensor(1.0, 0.0, 0.0, 0.0);
   glm::dvec3 translation(0.0, 0.0, 100.0);
   
   /* This is where we start to catch signals. */
-  //s_catch_signals ();
+  s_catch_signals ();
 
   std::cerr << "Loading model "      << model_filename << std::endl;
   std::cerr << "Scaling model by "   << model_scale_factor << std::endl;
@@ -204,6 +207,7 @@ int main(int argc, char** argv) {
   glfwWindowHint(GLFW_SAMPLES, 4); // 4x antialiasing
   glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 2); // We want OpenGL 2.1 (latest that will work on my MBA's Intel Sandy Bridge GPU)
   glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 1);
+  glfwWindowHint(GLFW_DOUBLEBUFFER, GL_FALSE);
 
   // std::cerr << "OpenGL version " << glGetString(GL_VERSION) << std::endl;
 
@@ -231,20 +235,23 @@ int main(int argc, char** argv) {
   Scene  scene(model_filename, model_scale_factor, -translation[2], box_width);
   Shader shader_program("shaders/vertex.glsl", "shaders/fragment.glsl");
   
-  glfwSwapBuffers(window);
+  //glfwSwapBuffers(window);
   
   
   /*
    * Main event loop
    */
-  std::cerr << "There are " << attitudes.size() << " attitudes." << std::endl;
-  
-  for (std::list<glm::dquat>::const_iterator it = attitudes.begin(); it != attitudes.end(); ++it) {
 
-    glm::dquat object = *it;
+  glm::dquat object;
+  bool succ = true;
+  size_t count = 0;
+  
+  while (succ && !s_interrupted && !std::cin.eof() && !std::cin.fail()) {
+
+    succ = read_quaternion(std::cin, object);
 
     scene.render(&shader_program, object, translation, sensor);
-    glfwSwapBuffers(window);
+    //glfwSwapBuffers(window);
     
     double pixels = scene.projected_area(width, height);
     double projected_area = pixels * box_width * box_width / (double)(width * height);
@@ -255,8 +262,15 @@ int main(int argc, char** argv) {
               << object.y << ' '
               << object.z << ' '
               << projected_area << std::endl;
+
+    ++count;
+    
   }
-  std::cerr << "Done!" << std::endl;
+  std::cerr << "Done printing areas for " << count << " attitudes." << std::endl;
+
+  while (persist && !s_interrupted) {
+    scene.render(&shader_program, object, translation, sensor);
+  }
   
 
   glfwTerminate();
