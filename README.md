@@ -80,7 +80,7 @@ The Python code in that subdirectory needs:
 
 On Ubuntu, you probably want to do something like
 
-    sudo apt-get install libassimp-dev libglfw3-dev libglew-dev libglm-dev cmake
+    sudo apt-get install libassimp-dev libglfw3-dev libglew-dev libglm-dev libxxf86vm-dev cmake
 
 For those who are Mac OS X users, I recommend using homebrew to
 install any dependencies.
