@@ -205,8 +205,8 @@ int main(int argc, char** argv) {
   }
 
   glfwWindowHint(GLFW_SAMPLES, 4); // 4x antialiasing
-  glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 2); // We want OpenGL 2.1 (latest that will work on my MBA's Intel Sandy Bridge GPU)
-  glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 1);
+  //glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4); // We want OpenGL 2.1 (latest that will work on my MBA's Intel Sandy Bridge GPU)
+  //glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 6);
   glfwWindowHint(GLFW_DOUBLEBUFFER, GL_FALSE);
 
   // std::cerr << "OpenGL version " << glGetString(GL_VERSION) << std::endl;
@@ -237,6 +237,7 @@ int main(int argc, char** argv) {
   
   //glfwSwapBuffers(window);
   
+  std::cout << "Loaded Scene and Shader" << std::endl;
   
   /*
    * Main event loop
@@ -248,6 +249,7 @@ int main(int argc, char** argv) {
   
   while (succ && !s_interrupted && !std::cin.eof() && !std::cin.fail()) {
 
+    std::cout << "Enter quaternion:" << std::endl;
     succ = read_quaternion(std::cin, object);
 
     scene.render(&shader_program, object, translation, sensor);
@@ -255,13 +257,16 @@ int main(int argc, char** argv) {
     
     double pixels = scene.projected_area(width, height);
     double projected_area = pixels * box_width * box_width / (double)(width * height);
-    
+
+
     std::cout << std::setprecision(17)
-              << object.w << ' '
+              << "Attitude: ";
+    std::cout << object.w << ' '
               << object.x << ' '
               << object.y << ' '
-              << object.z << ' '
-              << projected_area << std::endl;
+              << object.z << ' ' << std::endl;
+    std::cout << "Projected Area: ";
+    std::cout << projected_area << std::endl;
 
     ++count;
     

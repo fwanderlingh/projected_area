@@ -89,21 +89,21 @@ install any dependencies.
 
 First, you need a local copy of the repository:
 
-    git clone https://github.com/mohawjohn/projected_area.git
+    git clone https://github.com/fwanderlingh/projected_area.git
     cd projected_area
-    
+
 An in-tree build is not advised. As such, you should create a `build`
 subdirectory and `cd` into it, then tell `cmake` where to find the
 source tree.
-    
+
     mkdir build
     cd build
     cmake ..
-    
+
 If cmake reported no error messages, you can now build:
 
     make
-    
+
 You can probably also safely do a
 
     sudo make install
@@ -159,7 +159,7 @@ loads the 3D models. I have not been able to get it to work with the
 ## Bug Reports ##
 
 If you find a bug, please file it in our [issues tracker](https://github.com/mohawkjohn/projected_area/issues).
-  
+
 ## Contributing ##
 
 Contributions are appreciated. We prefer that you submit them as pull

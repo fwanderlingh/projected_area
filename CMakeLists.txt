@@ -33,6 +33,9 @@ include_directories(${ASSIMP_INCLUDE_DIRS})
 link_directories(${ASSIMP_LIBRARY_DIRS})
 add_definitions(${ASSIMP_DEFINITIONS})
 
+find_library(LZ4_LIBRARIES NAMES liblz4.so HINTS "lz4/lib")
+link_libraries(${LZ4_LIBRARIES})
+
 find_package(FLANN)
 include_directories(${FLANN_INCLUDE_DIRS})
 
